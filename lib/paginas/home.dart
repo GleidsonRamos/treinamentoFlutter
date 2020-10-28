@@ -3,8 +3,8 @@ import 'package:flutter_app/model/usuario.dart';
 import 'dart:convert' as convert;
 import 'package:flutter_app/widgets/botao.dart';
 import 'package:flutter_app/widgets/texto.dart';
-import 'package:getflutter/getflutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_ink_well/image_ink_well.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -18,12 +18,14 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   TextEditingController email = new TextEditingController();
 
+  int builds = 0;
+
   String textoExibido = "Memora";
   int count = 0;
 
   String nome;
 
-  static double width = 300;
+  double width = 600;
 
   int _selectedIndex = 0;
   static const TextStyle optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
@@ -39,10 +41,10 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    nome = "Buscando..";
-
+    usuarioGit newUser = usuarioGit();
+    newUser.name = "Buscando..";
     _widgetOptions = <Widget>[
-      consumoApi(nome),
+      consumoApi(newUser),
       paginaPrincipal(),
       Text(
         'Index 1: Business',
@@ -56,9 +58,8 @@ class _MyHomePageState extends State<MyHomePage> {
   iniciarBusca() async {
     usuarioGit usuario = await buscarDados();
     setState(() {
-      nome = usuario.name;
       _widgetOptions = <Widget>[
-        consumoApi(nome),
+        consumoApi(usuario),
         paginaPrincipal(),
         Text(
           'Index 1: Business',
@@ -70,9 +71,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    setState(() {
-      width = MediaQuery.of(context).size.width;
-    });
+
+    if(builds == 0){
+      setState(() {
+        width = MediaQuery.of(context).size.width;
+      });
+      builds++;
+    }
 
     return Scaffold(
       drawer: Drawer(
@@ -151,7 +156,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  static Widget paginaPrincipal(){
+  Widget paginaPrincipal(){
     return SingleChildScrollView(
       child: Column(
         children: <Widget>[
@@ -173,17 +178,14 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: <Widget>[
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: GFImageOverlay(
-                          height: 180,
-                          width: 180,
-                          margin: EdgeInsets.all(8),
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white,
-                            width: 4,
-                          ),
-                          image: AssetImage('lib/assets/perfil.jpeg')),
+                      child: CircleImageInkWell(
+                        onPressed: () {
+                          print('onPressed');
+                        },
+                        size: 120,
+                        image:  AssetImage('lib/assets/perfil.jpeg'),
+                        splashColor: Colors.white24,
+                      ),
                     ),
                     Text(
                       "Gleidson Ramos",
@@ -267,14 +269,14 @@ class _MyHomePageState extends State<MyHomePage> {
                     top: 80,
                     child: Container(
                       height: 270,
-                      width: width - 38,
+                      width: width - 120,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: <Widget>[
                           Padding(
                             padding: const EdgeInsets.all(24.0),
@@ -283,7 +285,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                               },
                               child: Container(
-                                width: width,
+                                width: width - 38,
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   border: Border.all(
@@ -334,7 +336,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Padding(
                             padding: const EdgeInsets.only(bottom: 24.0, left: 24.0, right: 24.0),
                             child: Container(
-                              width: width,
+                              width: width - 38,
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 border: Border.all(
@@ -398,14 +400,22 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget consumoApi(nomeApi){
+  Widget consumoApi(usuarioGit usuario){
       return Column(
         children: <Widget>[
-          Text("O nome do usuário é : $nomeApi"),
+          CircleImageInkWell(
+            onPressed: () {
+              print('onPressed');
+            },
+            size: 100,
+            image: NetworkImage(usuario.avatarUrl ?? "https://www.publicdomainpictures.net/pictures/280000/velka/not-found-image-15383864787lu.jpg"),
+            splashColor: Colors.white24,
+          ),
+          Text("O nome do usuário é : ${usuario.name}"),
           IconButton(
             icon: Icon(Icons.refresh),
            onPressed: (){
-             iniciarBusca();
+                iniciarBusca();
              },
           )
         ],
@@ -414,10 +424,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<usuarioGit> buscarDados() async {
     print("Solicitando dados..");
-    String url = "https://api.github.com/users/flaviossantana";
+    String url = "https://api.github.com/users/gleidsonramos";
     Map<String, String> header = new Map<String, String>();
     header['Content-type'] = 'application/json';
-    var response = await http.post(url, headers: header);
+    var response = await http.get(url, headers: header);
     print("Processando resposta..");
     if (response.statusCode != 200 && response.statusCode != 201) {
       print(response);
