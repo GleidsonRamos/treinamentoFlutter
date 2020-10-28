@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app/model/usuario.dart';
-import 'dart:convert' as convert;
-import 'package:flutter_app/widgets/botao.dart';
-import 'package:flutter_app/widgets/texto.dart';
-import 'package:http/http.dart' as http;
+import 'package:flutter_app/state/home_provider.dart';
 import 'package:image_ink_well/image_ink_well.dart';
+import 'package:provider/provider.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -27,56 +25,54 @@ class _MyHomePageState extends State<MyHomePage> {
 
   double width = 600;
 
-  int _selectedIndex = 0;
   static const TextStyle optionStyle = TextStyle(fontSize: 30, fontWeight: FontWeight.bold);
-  List<Widget> _widgetOptions;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    usuarioGit newUser = usuarioGit();
-    newUser.name = "Buscando..";
-    _widgetOptions = <Widget>[
-      consumoApi(newUser),
-      paginaPrincipal(),
-      Text(
-        'Index 1: Business',
-        style: optionStyle,
-      ),
-    ];
-
-
-  }
-
-  iniciarBusca() async {
-    usuarioGit usuario = await buscarDados();
-    setState(() {
-      _widgetOptions = <Widget>[
-        consumoApi(usuario),
-        paginaPrincipal(),
-        Text(
-          'Index 1: Business',
-          style: optionStyle,
-        ),
-      ];
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
+
+    HomeProvider homeProvider = Provider.of<HomeProvider>(context);
 
     if(builds == 0){
       setState(() {
         width = MediaQuery.of(context).size.width;
       });
       builds++;
+      usuarioGit newUser = usuarioGit();
+      newUser.name = "Buscando..";
+      homeProvider.setUsuario(newUser);
+    }
+
+    Widget consumoApi(){
+      return Column(
+        children: <Widget>[
+          CircleImageInkWell(
+            onPressed: () {
+              print('onPressed');
+            },
+            size: 100,
+            image: NetworkImage(homeProvider.usuario().avatarUrl ?? "https://www.publicdomainpictures.net/pictures/280000/velka/not-found-image-15383864787lu.jpg"),
+            splashColor: Colors.white24,
+          ),
+          Text("O nome do usuário é : ${homeProvider.usuario().name}"),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: (){
+              homeProvider.iniciarBusca();
+            },
+          ),
+        ],
+      );
+    }
+
+    List<Widget> montarTabs(){
+      return <Widget>[
+        consumoApi(),
+        paginaPrincipal(),
+        Text(
+          'Index 1: Business',
+          style: optionStyle,
+        ),
+      ];
     }
 
     return Scaffold(
@@ -133,7 +129,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: _widgetOptions.elementAt(_selectedIndex),
+      body: montarTabs().elementAt(homeProvider.getIndex()),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -149,9 +145,9 @@ class _MyHomePageState extends State<MyHomePage> {
             title: Text('School'),
           ),
         ],
-        currentIndex: _selectedIndex,
+        currentIndex: homeProvider.getIndex(),
         selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
+        onTap: homeProvider.setTabIndex,
       ),
     );
   }
@@ -400,41 +396,5 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget consumoApi(usuarioGit usuario){
-      return Column(
-        children: <Widget>[
-          CircleImageInkWell(
-            onPressed: () {
-              print('onPressed');
-            },
-            size: 100,
-            image: NetworkImage(usuario.avatarUrl ?? "https://www.publicdomainpictures.net/pictures/280000/velka/not-found-image-15383864787lu.jpg"),
-            splashColor: Colors.white24,
-          ),
-          Text("O nome do usuário é : ${usuario.name}"),
-          IconButton(
-            icon: Icon(Icons.refresh),
-           onPressed: (){
-                iniciarBusca();
-             },
-          )
-        ],
-      );
-  }
-
-  Future<usuarioGit> buscarDados() async {
-    print("Solicitando dados..");
-    String url = "https://api.github.com/users/gleidsonramos";
-    Map<String, String> header = new Map<String, String>();
-    header['Content-type'] = 'application/json';
-    var response = await http.get(url, headers: header);
-    print("Processando resposta..");
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      print(response);
-    } else {
-      final responseJson = convert.jsonDecode(response.body);
-      return usuarioGit.fromJson(responseJson);
-    }
-  }
 
 }
